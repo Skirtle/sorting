@@ -1,10 +1,13 @@
 from dataclasses import dataclass, field
 from TrackedList import tlist
+from collections.abc import Iterator
 import tkinter
 
-DELAY = 0.005
+DELAY = 0.010
 BG_COLOR = "#131313"
 DEFAULT_FILL = "#C0C0C0"
+CHECKING_INDEX = "#50FF50"
+CURR_INDEX = "#FF5050"
 
 @dataclass
 class Engine():
@@ -13,6 +16,9 @@ class Engine():
     
     root: tkinter.Tk = field(init = False)
     canvas: tkinter.Canvas = field(init = False)
+    
+    arr: tlist = field(init = False)
+    sort: Iterator[dict[int, str]] = field(init = False)
     
     def __post_init__(self) -> None:        
         self.root = tkinter.Tk()
@@ -50,45 +56,49 @@ class Engine():
             y2 = self.height - (max_bar_height_multiplier * value)
             self.draw_rect(round(x1), round(y2), round(x2), round(y1), colors.get(index, DEFAULT_FILL))
         
+    def start_sort(self, arr: tlist, function) -> None:
+        self.arr = arr
+        self.sort = function(arr, self)
+        self.next_step()
         
-def selectionsort(arr: tlist, engine: Engine | None = None) -> None:
+    def next_step(self) -> None:
+        try:
+            colors = next(self.sort)
+            self.draw_array(self.arr, colors)
+            self.root.after(int(DELAY * 1000), self.next_step)
+        except StopIteration:
+            ...
+        
+def selectionsort(arr: tlist, engine: Engine):
     length = len(arr)
-    
-    def step(i: int, j: int, j_min: int) -> None:
-        if (i >= length - 1 or engine == None): return
+    for i in range(length - 1):
+        j_min = i
+        for j in range(i + 1, length):
+            yield {j: CURR_INDEX, j_min: CHECKING_INDEX}
+            if arr.is_lt(j, j_min):
+                j_min = j
         
-        if (j >= length):
-            if j_min != i:
-                arr.swap(i, j_min)
-            
-            engine.draw_array(arr, {i: "#50FF50"})
-            engine.root.after(int(DELAY * 1000), step, i + 1, i + 2, i + 1)
-            return
+        arr.swap(i, j_min)
+        yield {}
+
+def bubblesort(arr: tlist, engine: Engine):
+    length = len(arr)
+    for i in range(length):
+        swapped = False
         
-        colors = {
-            i: "#50FF50",
-            j: "#FF0000",
-            j_min: "#FFFF00"
-        }
-        engine.draw_array(arr, colors)
-        if (arr.is_lt(j, j_min)):
-            j_min = j
-            
-        engine.root.after(int(DELAY * 1000), step, i, j + 1, j_min)
-    
-    if (engine == None):
-        # do normal here
-        ...
-    else:
-        step(0, 1, 0)
+        for j in range(0, length - i - 1):
+            yield {i: CHECKING_INDEX, j: CURR_INDEX}
+            if arr.is_gt(j, j + 1):
+                arr.swap(j, j + 1)
+                swapped = True
+                yield {j: CURR_INDEX, j + 1: CURR_INDEX, i: CHECKING_INDEX}
+                
+        if (not swapped):
+            break
 
-
-arr = tlist(list(range(1, 50)))
+n = 100
+arr = tlist(list(range(1, n + 1)))
 arr.shuffle()
-print(arr)
-
 engine = Engine(1000, 800)
-
-selectionsort(arr, engine)
+engine.start_sort(arr, selectionsort)
 engine.start()
-print(arr)
