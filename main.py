@@ -3,7 +3,7 @@ from TrackedList import tlist
 from collections.abc import Iterator
 import tkinter
 
-DELAY = 1
+DELAY = 20
 BG_COLOR = "#131313"
 DEFAULT_FILL = "#C0C0C0"
 CHECKING_INDEX = "#50FF50"
@@ -118,7 +118,7 @@ def bidrectional_selection_sort(arr: tlist):
     yield {}
 
 
-n = 250
+n = 50
 arr = tlist(list(range(1, n + 1)))
 arr.shuffle()
 engine = Engine(2000, 1000)
