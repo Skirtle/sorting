@@ -3,11 +3,12 @@ from TrackedList import tlist
 from collections.abc import Iterator
 import tkinter
 
-DELAY = 20
+DELAY = 5
 BG_COLOR = "#131313"
 DEFAULT_FILL = "#C0C0C0"
-CHECKING_INDEX = "#50FF50"
-CURR_INDEX = "#FF5050"
+MAIN_INDEX = "#50FF50"
+INDEX_TO_CHECK = "#FF5050"
+AUX_INDEX = "#0000FF"
 
 @dataclass
 class Engine():
@@ -73,7 +74,7 @@ def selection_sort(arr: tlist):
     for i in range(length - 1):
         j_min = i
         for j in range(i + 1, length):
-            yield {j: CURR_INDEX, j_min: CHECKING_INDEX}
+            yield {j: INDEX_TO_CHECK, j_min: MAIN_INDEX}
             if arr.is_lt(j, j_min):
                 j_min = j
         
@@ -86,11 +87,11 @@ def bubble_sort(arr: tlist):
         swapped = False
         
         for j in range(0, length - i - 1):
-            yield {i: CHECKING_INDEX, j: CURR_INDEX}
+            yield {i: MAIN_INDEX, j: INDEX_TO_CHECK}
             if arr.is_gt(j, j + 1):
                 arr.swap(j, j + 1)
                 swapped = True
-                yield {j: CURR_INDEX, j + 1: CURR_INDEX, i: CHECKING_INDEX}
+                yield {j: INDEX_TO_CHECK, j + 1: INDEX_TO_CHECK, i: MAIN_INDEX}
                 
         if (not swapped):
             break
@@ -104,7 +105,7 @@ def bidrectional_selection_sort(arr: tlist):
         last = length - 1 - i
 
         for j in range(i + 1, last + 1):
-            yield { j: CURR_INDEX, j_min: CHECKING_INDEX, j_max: "#5050FF" }
+            yield { j: INDEX_TO_CHECK, j_min: MAIN_INDEX, j_max: "#5050FF" }
             if arr.is_lt(j, j_min): j_min = j
             if arr.is_gt(j, j_max): j_max = j
 
@@ -117,7 +118,40 @@ def bidrectional_selection_sort(arr: tlist):
         yield {}
     yield {}
 
+def cycle_sort(arr):
+    length = len(arr)
+    for cycle_start in range(0, length - 1):
+        item = arr[cycle_start]
 
+        pos = cycle_start
+        for i in range(cycle_start + 1, length):
+            yield { i: INDEX_TO_CHECK, cycle_start: MAIN_INDEX }
+            if (arr[i] < item): pos += 1
+        if (pos == cycle_start): continue
+
+        while (item == arr[pos]): pos += 1
+
+        if (pos != cycle_start):
+            yield { cycle_start: MAIN_INDEX, pos: INDEX_TO_CHECK, pos: AUX_INDEX}
+            arr[pos], item = item, arr[pos]
+
+        while (pos != cycle_start):
+            pos = cycle_start
+
+            for i in range(cycle_start + 1, length):
+                yield { i: INDEX_TO_CHECK, cycle_start: MAIN_INDEX, pos: AUX_INDEX}
+                if (arr[i] < item): pos += 1
+
+            while (item == arr[pos]): pos += 1
+
+            if (item != arr[pos]):
+                yield { cycle_start: MAIN_INDEX, pos: INDEX_TO_CHECK }
+                arr[pos], item = item, arr[pos]
+
+        yield {}
+    yield {}
+            
+        
 n = 50
 arr = tlist(list(range(1, n + 1)))
 arr.shuffle()
