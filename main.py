@@ -1,14 +1,16 @@
 from dataclasses import dataclass, field
 from TrackedList import tlist
 from collections.abc import Iterator
+from random import randint
 import tkinter
 
-DELAY = 5
+DELAY = 1
 BG_COLOR = "#131313"
 DEFAULT_FILL = "#C0C0C0"
 MAIN_INDEX = "#50FF50"
 INDEX_TO_CHECK = "#FF5050"
-AUX_INDEX = "#0000FF"
+AUX_INDEX = "#6060FD"
+AUX_INDEX_2 = "#47A5A8"
 
 @dataclass
 class Engine():
@@ -56,9 +58,9 @@ class Engine():
             y2 = self.height - (max_bar_height_multiplier * value)
             self.draw_rect(round(x1), round(y2), round(x2), round(y1), colors.get(index, DEFAULT_FILL))
         
-    def start_sort(self, arr: tlist, function) -> None:
+    def start_sort(self, arr: tlist, generator) -> None:
         self.arr = arr
-        self.sort = function(arr)
+        self.sort = generator(arr)
         self.next_step()
         
     def next_step(self) -> None:
@@ -78,8 +80,9 @@ def selection_sort(arr: tlist):
             if arr.is_lt(j, j_min):
                 j_min = j
         
+        yield {i: INDEX_TO_CHECK, j_min: MAIN_INDEX}
         arr.swap(i, j_min)
-        yield {}
+    yield {}
 
 def bubble_sort(arr: tlist):
     length = len(arr)
@@ -95,6 +98,7 @@ def bubble_sort(arr: tlist):
                 
         if (not swapped):
             break
+    yield {}
 
 def bidrectional_selection_sort(arr: tlist):
     length = len(arr)
@@ -184,6 +188,7 @@ def quick_sort(arr: tlist):
 
     
     yield from quick_sort_main(arr, 0, len(arr) - 1)
+    yield {}
 
 def bogo_sort(arr: tlist):
     sorted = False
@@ -198,11 +203,90 @@ def bogo_sort(arr: tlist):
             sorted = True
         if (sorted): break
         arr.shuffle()
+
+def insertion_sort(arr: tlist):
+    length = len(arr)
+    for i in range(1, length):
+        key = arr[i]
+        j = i - 1
+        
+        while (j >= 0 and key < arr[j]):
+            yield {i: MAIN_INDEX, j: INDEX_TO_CHECK}
+            arr[j+1] =arr[j]
+            j -= 1
+        arr[j + 1] = key
+    yield {}
+
+def merge_sort(arr: tlist):
+    def merge(arr: tlist, left: int, mid: int, right: int):
+        n1 = mid - left + 1
+        n2 = right - mid
+        
+        L = tlist([0] * n1)
+        R = tlist([0] * n2)
+        
+        for i in range(n1):
+            L[i] = arr[left + i]
+        for i in range(n2):
+            R[i] = arr[mid + 1 + i]
+            
+        i = 0
+        j = 0
+        k = left
+        
+        while (i < n1 and j < n2):
+            colors = {}
+            for x in range(n1): colors[left + x] = AUX_INDEX
+            for x in range(n2): colors[mid + 1 + x] = AUX_INDEX_2
+            yield colors
+            
+            if L[i] <= R[j]:
+                arr.comparisons += 1
+                arr[k] = L[i]
+                i += 1
+            else:
+                arr[k] = R[j]
+                j += 1
+            k += 1
+            
+        while i < n1:
+            arr[k] = L[i]
+            i += 1
+            k += 1
+            
+        while j < n2:
+            arr[k] = R[j]
+            j += 1
+            k += 1
+            
+        tlist.reads += L.reads + R.reads
+        tlist.writes += L.writes + R.writes
+        tlist.comparisons += L.comparisons + R.comparisons
+        tlist.swaps += L.swaps + R.swaps
+        
+    def merge_sort_main(arr, left, right):
+        if (left < right):
+            mid = (left + right) // 2
+
+            reds = {}
+            for i in range(left, mid + 1): reds[i] = INDEX_TO_CHECK
+            yield from merge_sort_main(arr, left, mid)
+            # yield reds
+            
+            reds = {}
+            for i in range(mid + 1, right + 1): reds[i] = INDEX_TO_CHECK
+            yield from merge_sort_main(arr, mid + 1, right)
+            # yield reds
+            
+            yield from merge(arr, left, mid, right)
     
-n = 50
+    yield from merge_sort_main(arr, 0, len(arr) - 1)
+    yield {}
+
+n = 100
 arr = tlist(list(range(1, n + 1)))
 arr.shuffle()
 engine = Engine(2000, 1000)
-engine.start_sort(arr, bubble_sort)
+engine.start_sort(arr, merge_sort)
 engine.start()
-print(arr)
+print(arr.info())
