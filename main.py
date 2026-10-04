@@ -3,7 +3,7 @@ from TrackedList import tlist
 from collections.abc import Iterator
 import tkinter
 
-DELAY = 0.010
+DELAY = 1
 BG_COLOR = "#131313"
 DEFAULT_FILL = "#C0C0C0"
 CHECKING_INDEX = "#50FF50"
@@ -34,11 +34,10 @@ class Engine():
 
     def draw_array(self, arr: list[int] | tlist, colors: dict[int, str] = {}) -> None:
         self.canvas.delete("all")
-        if (isinstance(arr, tlist)): 
-            self.canvas.create_text(10, 10, text = arr.info(), fill = DEFAULT_FILL, anchor = tkinter.NW)
-        side_spacing = 10
-        bar_spacing = 5
-        bottom_spacing = 10
+        if (isinstance(arr, tlist)): self.canvas.create_text(10, 10, text = arr.info(), fill = DEFAULT_FILL, anchor = tkinter.NW)
+        side_spacing = 5
+        bar_spacing = 3
+        bottom_spacing = 5
 
         count = len(arr)
 
@@ -58,18 +57,18 @@ class Engine():
         
     def start_sort(self, arr: tlist, function) -> None:
         self.arr = arr
-        self.sort = function(arr, self)
+        self.sort = function(arr)
         self.next_step()
         
     def next_step(self) -> None:
         try:
             colors = next(self.sort)
             self.draw_array(self.arr, colors)
-            self.root.after(int(DELAY * 1000), self.next_step)
+            self.root.after(int(DELAY), self.next_step)
         except StopIteration:
             ...
         
-def selectionsort(arr: tlist, engine: Engine):
+def selection_sort(arr: tlist):
     length = len(arr)
     for i in range(length - 1):
         j_min = i
@@ -81,7 +80,7 @@ def selectionsort(arr: tlist, engine: Engine):
         arr.swap(i, j_min)
         yield {}
 
-def bubblesort(arr: tlist, engine: Engine):
+def bubble_sort(arr: tlist):
     length = len(arr)
     for i in range(length):
         swapped = False
@@ -96,9 +95,33 @@ def bubblesort(arr: tlist, engine: Engine):
         if (not swapped):
             break
 
-n = 100
+def bidrectional_selection_sort(arr: tlist):
+    length = len(arr)
+
+    for i in range(length // 2):
+        j_min = i
+        j_max = i
+        last = length - 1 - i
+
+        for j in range(i + 1, last + 1):
+            yield { j: CURR_INDEX, j_min: CHECKING_INDEX, j_max: "#5050FF" }
+            if arr.is_lt(j, j_min): j_min = j
+            if arr.is_gt(j, j_max): j_max = j
+
+        if (j_max != last):
+            arr.swap(j_max, last)
+            if (j_min == last): j_min = j_max
+
+        if (j_min != i):
+            arr.swap(i, j_min)
+        yield {}
+    yield {}
+
+
+n = 250
 arr = tlist(list(range(1, n + 1)))
 arr.shuffle()
-engine = Engine(1000, 800)
-engine.start_sort(arr, selectionsort)
+engine = Engine(2000, 1000)
+engine.start_sort(arr, bidrectional_selection_sort)
 engine.start()
+print(arr)
