@@ -31,7 +31,7 @@ class Engine():
         self.root.mainloop()
         
     def draw_rect(self, x1: int, y1: int, x2: int, y2: int, fill: str = "") -> None:
-        self.canvas.create_rectangle(x1, y1, x2, y2, fill = fill)
+        self.canvas.create_rectangle(x1, y1, x2, y2, fill = fill, outline = fill)
 
     def draw_array(self, arr: list[int] | tlist, colors: dict[int, str] = {}) -> None:
         self.canvas.delete("all")
@@ -68,7 +68,7 @@ class Engine():
             self.root.after(int(DELAY), self.next_step)
         except StopIteration:
             ...
-        
+
 def selection_sort(arr: tlist):
     length = len(arr)
     for i in range(length - 1):
@@ -118,8 +118,9 @@ def bidrectional_selection_sort(arr: tlist):
         yield {}
     yield {}
 
-def cycle_sort(arr):
+def cycle_sort(arr: tlist):
     length = len(arr)
+    
     for cycle_start in range(0, length - 1):
         item = arr[cycle_start]
 
@@ -150,12 +151,58 @@ def cycle_sort(arr):
 
         yield {}
     yield {}
-            
-        
+
+def quick_sort(arr: tlist):
+    def partition(arr: tlist, low: int, high: int):
+        pivot = arr[high]
+        i = low - 1
+
+        for j in range(low, high):
+            if (arr[j] < pivot):
+                i += 1
+                arr.swap(i, j)
+                yield {i: MAIN_INDEX, j: INDEX_TO_CHECK}
+
+        arr.swap(i + 1, high)
+        yield {i + 1: MAIN_INDEX, high: INDEX_TO_CHECK}
+
+        return i + 1
+
+
+    def quick_sort_main(arr: tlist, low: int, high: int):
+        if (low < high):
+            partition_gen = partition(arr, low, high)
+
+            while True:
+                try: yield next(partition_gen)
+                except StopIteration as e:
+                    pi = e.value
+                    break
+
+            yield from quick_sort_main(arr, low, pi - 1)
+            yield from quick_sort_main(arr, pi + 1, high)
+
+    
+    yield from quick_sort_main(arr, 0, len(arr) - 1)
+
+def bogo_sort(arr: tlist):
+    sorted = False
+    while (not sorted):
+        length = len(arr)
+        for i in range(length - 1):
+            yield {i: MAIN_INDEX, i + 1: INDEX_TO_CHECK}
+            if (arr.is_gt(i, i + 1)):
+                sorted = False
+                break
+        else:
+            sorted = True
+        if (sorted): break
+        arr.shuffle()
+    
 n = 50
 arr = tlist(list(range(1, n + 1)))
 arr.shuffle()
 engine = Engine(2000, 1000)
-engine.start_sort(arr, bidrectional_selection_sort)
+engine.start_sort(arr, bubble_sort)
 engine.start()
 print(arr)
